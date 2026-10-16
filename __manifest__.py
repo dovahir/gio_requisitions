@@ -35,7 +35,6 @@ Características principales:
     "assets": {
         "web.assets_backend": [
             "gio_requisitions/static/src/dashboard/project_dashboard_patch.js",
-            "gio_requisitions/static/src/dashboard/project_dashboard_patch.xml",
             "gio_requisitions/static/src/centro_costos/centro_costos_requisiciones.js",
             "gio_requisitions/static/src/centro_costos/centro_costos_requisiciones.xml",
             "gio_requisitions/static/src/centro_costos/centro_costos_requisiciones.scss",

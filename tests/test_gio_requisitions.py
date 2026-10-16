@@ -3,6 +3,8 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import common, tagged
 
+from odoo.addons.gio.models.contractor_proyecto_revision import MARCADOR_REVISION_INTERNA
+
 
 @tagged('post_install', '-at_install', 'gio_requisitions')
 class TestGioRequisitions(common.TransactionCase):
@@ -82,12 +84,14 @@ class TestGioRequisitions(common.TransactionCase):
 
         if congelado:
             # Simular baseline aprobada y congelada
-            revision = self.env['contractor.proyecto.revision'].with_context(_revision_crear=True).create({
+            revision = self.env['contractor.proyecto.revision'].with_context(
+                _revision_crear=MARCADOR_REVISION_INTERNA,
+            ).create({
                 'proyecto_id': proyecto.id,
                 'nombre': 'Revisión Baseline Inicial',
                 'motivo': 'Aprobación inicial de baseline contractual para pruebas',
             })
-            revision.with_context(_revision_lifecycle=True).write({
+            revision.with_context(_revision_lifecycle=MARCADOR_REVISION_INTERNA).write({
                 'state': 'aprobada',
                 'snapshot_capturado': True,
                 'fecha_aprobacion': fields.Datetime.now(),
@@ -336,12 +340,14 @@ class TestGioRequisitions(common.TransactionCase):
         })
 
         # Congelar revisión contractual
-        revision = self.env['contractor.proyecto.revision'].with_context(_revision_crear=True).create({
+        revision = self.env['contractor.proyecto.revision'].with_context(
+            _revision_crear=MARCADOR_REVISION_INTERNA,
+        ).create({
             'proyecto_id': proy_ok.id,
             'nombre': 'Revisión Baseline Inicial Test 08',
             'motivo': 'Aprobación inicial de baseline contractual para pruebas',
         })
-        revision.with_context(_revision_lifecycle=True).write({
+        revision.with_context(_revision_lifecycle=MARCADOR_REVISION_INTERNA).write({
             'state': 'aprobada',
             'snapshot_capturado': True,
             'fecha_aprobacion': fields.Datetime.now(),

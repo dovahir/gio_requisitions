@@ -64,28 +64,4 @@ patch(ProjectDashboard.prototype, {
         }
         return super.openWorkspace(workspace);
     },
-
-    async abrirNuevaRequisicionExplosion() {
-        const ctx = this.getActionContext();
-        const projectId = this.getProjectId(ctx) || this.state.data.id;
-        if (!projectId) {
-            return;
-        }
-        try {
-            const action = await this.orm.call(
-                "contractor.proyecto",
-                "action_open_requisition_wizard",
-                [projectId],
-                { context: ctx }
-            );
-            if (action && !action.views) {
-                action.views = [[false, "form"]];
-            }
-            await this.action.doAction(action);
-        } catch (error) {
-            console.error("[ProjectDashboardPatch] Error al abrir asistente de requisición:", error);
-            const msg = error?.data?.message || error?.message || "No se pudo abrir el asistente de requisición.";
-            this.notification.add(msg, { type: "danger" });
-        }
-    },
 });
