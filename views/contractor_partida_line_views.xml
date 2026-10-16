@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Inyección de columnas de trazabilidad y botón en la Explosión de Insumos -->
+    <record id="view_partida_line_list_explosion_inherit_gio_requisitions" model="ir.ui.view">
+        <field name="name">partida.line.list.explosion.inherit.gio.requisitions</field>
+        <field name="model">contractor.partida.line</field>
+        <field name="inherit_id" ref="gio.view_partida_line_list_explosion_insumos"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='cantidad_explosion']" position="after">
+                <field name="qty_requisited" string="Requisitado" optional="show"/>
+                <field name="qty_supplied" string="Suministrado" optional="show"/>
+                <field name="qty_in_transit" string="En Tránsito" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

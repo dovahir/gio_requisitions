@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Smart Button en la ficha principal de Información y Documentos del Proyecto -->
+    <record id="view_proyecto_form_inherit_requisitions" model="ir.ui.view">
+        <field name="name">proyecto.form.inherit.requisitions</field>
+        <field name="model">contractor.proyecto</field>
+        <field name="inherit_id" ref="gio.view_proyecto_form_info_documentos"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="is_requisition_eligible" invisible="1"/>
+                <button name="action_view_requisitions" type="object"
+                        class="oe_stat_button" icon="fa-shopping-cart"
+                        invisible="requisition_count == 0">
+                    <field name="requisition_count" widget="statinfo" string="Requisiciones"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Pestaña Almacén: desactivar botón "Nuevo" en la cabecera (Punto 6) -->
+    <record id="view_proyecto_form_almacen_inherit_no_create" model="ir.ui.view">
+        <field name="name">proyecto.form.almacen.inherit.no.create</field>
+        <field name="model">contractor.proyecto</field>
+        <field name="inherit_id" ref="gio.view_proyecto_form_almacen"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="create">0</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

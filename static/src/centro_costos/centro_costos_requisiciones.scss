@@ -1,0 +1,125 @@
+.o_gio_requisiciones {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    background-color: transparent !important;
+    color: inherit;
+
+    .o_gio_costos_metric {
+        padding: 12px 16px;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+
+        .o_gio_costos_metric_label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--apu-dark-muted, #6c757d);
+            margin-bottom: 6px;
+        }
+
+        .o_gio_costos_metric_value {
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .o_gio_costos_metric_hint {
+            font-size: 0.8rem;
+            color: var(--apu-dark-muted, #6c757d);
+        }
+    }
+
+    .o_gio_costos_table_container {
+        background-color: var(--apu-dark-surface, #ffffff);
+        border: 1px solid var(--apu-dark-border, #e9ecef);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table {
+        --bs-table-bg: transparent;
+        --bs-table-color: inherit;
+        color: inherit;
+        border-color: var(--apu-dark-border, #dee2e6);
+        margin-bottom: 0;
+
+        thead th {
+            background-color: var(--apu-dark-surface-raised, #f8f9fa) !important;
+            color: var(--apu-dark-muted, #6c757d) !important;
+            border-bottom: 1px solid var(--apu-dark-border, #dee2e6);
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 10px 12px;
+        }
+
+        tbody td {
+            border-bottom: 1px solid var(--apu-dark-border, #f1f3f5);
+            color: inherit;
+            padding: 10px 12px;
+        }
+
+        tbody tr:hover td {
+            background-color: var(--apu-dark-surface-hover, rgba(0, 0, 0, 0.04)) !important;
+        }
+    }
+
+    .form-control,
+    .form-select,
+    .input-group-text {
+        background-color: var(--apu-dark-surface, #ffffff);
+        color: var(--apu-dark-text, inherit);
+        border-color: var(--apu-dark-border, #ced4da);
+
+        &:focus {
+            background-color: var(--apu-dark-surface, #ffffff);
+            color: var(--apu-dark-text, inherit);
+            border-color: var(--apu-dark-accent, #86b7fe);
+        }
+    }
+
+    .o_gio_badge_items {
+        background-color: var(--apu-dark-surface-raised, #f8f9fa);
+        color: var(--apu-dark-text, #212529);
+        border-color: var(--apu-dark-border, #dee2e6) !important;
+    }
+
+    .progress {
+        background-color: var(--apu-dark-surface-raised, #e9ecef);
+    }
+
+    .badge-info {
+        background-color: #0dcaf0;
+        color: #000;
+    }
+
+    .badge-primary {
+        background-color: #0d6efd;
+        color: #fff;
+    }
+
+    .badge-warning {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .badge-success {
+        background-color: #198754;
+        color: #fff;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    .badge-secondary {
+        background-color: #6c757d;
+        color: #fff;
+    }
+}

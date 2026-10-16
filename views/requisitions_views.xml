@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Extensión de la Vista Formulario de Requisiciones -->
+    <record id="view_requisitions_form_inherit_gio" model="ir.ui.view">
+        <field name="name">requisitions.form.inherit.gio</field>
+        <field name="model">requisitions</field>
+        <field name="inherit_id" ref="dh_requisitions.requisitions_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Inyección de campos de proyecto en el grupo Destino -->
+            <xpath expr="//group[@name='destination_data']" position="inside">
+                <field name="proyecto_id" readonly="not can_edit_lines"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="proyecto_location_id" invisible="not proyecto_id"/>
+            </xpath>
+
+            <!-- Inyección de columnas en pestaña Materiales -->
+            <xpath expr="//page[@name='materials_page']//field[@name='material_line_ids']//list//field[@name='product_id']" position="before">
+                <field name="partida_line_id" optional="hide"
+                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="partida_id" optional="show"/>
+            </xpath>
+
+            <!-- Inyección de columnas en pestaña Equipos -->
+            <xpath expr="//page[@name='equipments_page']//field[@name='equipment_line_ids']//list//field[@name='product_id']" position="before">
+                <field name="partida_line_id" optional="hide"
+                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="partida_id" optional="show"/>
+            </xpath>
+
+            <!-- Inyección de columnas en pestaña Herramientas -->
+            <xpath expr="//page[@name='tools_page']//field[@name='tool_line_ids']//list//field[@name='product_id']" position="before">
+                <field name="partida_line_id" optional="hide"
+                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="partida_id" optional="show"/>
+            </xpath>
+
+            <!-- Inyección de columnas en pestaña Servicios -->
+            <xpath expr="//page[@name='services_page']//field[@name='service_line_ids']//list//field[@name='product_id']" position="before">
+                <field name="partida_line_id" optional="hide"
+                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
+                       options="{'no_create': True, 'no_create_edit': True}"/>
+                <field name="partida_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extensión de la Vista Lista de Requisiciones -->
+    <record id="view_requisitions_list_inherit_gio" model="ir.ui.view">
+        <field name="name">requisitions.list.inherit.gio</field>
+        <field name="model">requisitions</field>
+        <field name="inherit_id" ref="dh_requisitions.requisitions_view_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='warehouse_id']" position="after">
+                <field name="proyecto_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Extensión de la Vista Búsqueda de Requisiciones -->
+    <record id="view_requisitions_search_inherit_gio" model="ir.ui.view">
+        <field name="name">requisitions.search.inherit.gio</field>
+        <field name="model">requisitions</field>
+        <field name="inherit_id" ref="dh_requisitions.requisitions_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='warehouse_id']" position="after">
+                <field name="proyecto_id"/>
+            </xpath>
+            <xpath expr="//filter[@name='filter_my_requisitions']" position="after">
+                <filter name="filter_con_proyecto" string="Con Proyecto GIO"
+                        domain="[('proyecto_id', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_by_warehouse']" position="after">
+                <filter name="group_by_proyecto" string="Proyecto GIO"
+                        context="{'group_by': 'proyecto_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_contractor_explosion_requisicion_wizard_form" model="ir.ui.view">
+        <field name="name">contractor.explosion.requisicion.wizard.form</field>
+        <field name="model">contractor.explosion.requisicion.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generar Requisición desde Explosión de Insumos">
+                <sheet>
+                    <div class="alert alert-info d-flex align-items-center mb-3" role="status">
+                        <i class="fa fa-info-circle fa-2x me-3 text-info" title="Información"/>
+                        <div>
+                            <strong class="d-block">Solicitud de Insumos para Obra</strong>
+                            <span class="text-muted">
+                                Captura las cantidades requeridas para cada insumo presupuestado. Se generará una requisición en borrador vinculada al proyecto.
+                            </span>
+                        </div>
+                    </div>
+
+                    <group>
+                        <group string="Datos del Proyecto y Solicitud">
+                            <field name="proyecto_id" options="{'no_open': True}"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="employee_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="user_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                        <group string="Logística de Entrega">
+                            <field name="warehouse_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="date_required"/>
+                            <field name="priority" widget="priority"/>
+                        </group>
+                    </group>
+
+                    <group string="Observaciones">
+                        <field name="note" placeholder="Justificación técnica o notas especiales para compras y almacén..." nolabel="1"/>
+                    </group>
+
+                    <notebook>
+                        <page string="Insumos Presupuestados" name="lines_page">
+                            <field name="line_ids">
+                                <list editable="bottom" create="0" delete="1">
+                                    <field name="partida_id" readonly="1" optional="show"/>
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="product_uom_id" readonly="1" optional="show"/>
+                                    <field name="cantidad_explosion" readonly="1"/>
+                                    <field name="qty_requisited" readonly="1"/>
+                                    <field name="qty_disponible_planeada" readonly="1"
+                                           decoration-danger="qty_disponible_planeada == 0"
+                                           decoration-success="qty_disponible_planeada &gt; 0"/>
+                                    <field name="product_qty" string="Cantidad a Solicitar"
+                                           class="fw-bold text-primary"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <footer>
+                    <button name="action_crear_requisicion"
+                            string="Generar Requisición"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-check-circle"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

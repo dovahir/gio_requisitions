@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="gio_requisitions.CentroCostosRequisiciones">
+        <div class="o_gio_requisiciones o_gio_costos" t-att-aria-busy="state.loading">
+            <!-- Barra de Navegación Integrada del Proyecto -->
+            <ProjectWorkspaceNavigation
+                context="contexto"
+                projectId="projectId"
+                initialMainTab="initialMainTab"
+                initialSubTab="initialSubTab"
+                activeMainTab="initialMainTab"
+                activeSubTab="initialSubTab"/>
+
+            <!-- Banners de Validación de Elegibilidad -->
+            <div class="px-3 pt-2" t-if="state.data and !state.error">
+                <!-- Alerta: Proyecto no congelado -->
+                <div t-if="!state.data.congelado" class="alert alert-warning d-flex align-items-center mb-2" role="alert">
+                    <i class="fa fa-exclamation-triangle fa-2x me-3 text-warning"/>
+                    <div>
+                        <strong>Proyecto sin Línea Base Aprobada</strong>
+                        <p class="mb-0 small text-muted">
+                            Para poder emitir requisiciones de insumos, el proyecto debe contar con una revisión aprobada y congelada.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Alerta: Falta ubicación de almacén -->
+                <div t-if="state.data.congelado and !state.data.configurado_almacen" class="alert alert-danger d-flex align-items-center justify-content-between mb-2" role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="fa fa-map-marker fa-2x me-3 text-danger"/>
+                        <div>
+                            <strong>Ubicación de Almacén de Obra Pendiente</strong>
+                            <p class="mb-0 small text-muted">
+                                El proyecto no tiene una ubicación física asignada. Es obligatorio designarla antes de solicitar materiales.
+                            </p>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger ms-3" t-on-click="abrirAlmacenConfiguracion">
+                        Configurar Almacén
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPIs y Métricas de Requisiciones de Obra -->
+            <section class="o_gio_costos_kpis px-3 py-2" t-if="state.data and !state.error">
+                <div class="d-flex flex-wrap gap-2 align-items-stretch">
+                    <!-- Tarjetas de Métricas -->
+                    <div class="d-flex flex-wrap flex-grow-1 gap-2">
+                        <!-- Tarjeta 1: Conteo General de Requisiciones -->
+                        <article class="o_proj_box o_gio_costos_metric flex-fill">
+                            <div class="o_gio_costos_metric_label">
+                                <span>Requisiciones</span>
+                                <i class="fa fa-file-text-o text-primary"/>
+                            </div>
+                            <div class="o_gio_costos_metric_value text-primary fs-3 fw-bold">
+                                <t t-esc="state.data.conteo_estados.total"/>
+                            </div>
+                            <span class="o_gio_costos_metric_hint">
+                                <span class="badge bg-warning text-dark me-1"><t t-esc="state.data.conteo_estados.to_approve"/> x aprobar</span>
+                                <span class="badge bg-success"><t t-esc="state.data.conteo_estados.done"/> surtidas</span>
+                            </span>
+                        </article>
+
+                        <!-- Tarjeta 2: Avance Global de Suministro -->
+                        <article class="o_proj_box o_gio_costos_metric flex-fill">
+                            <div class="o_gio_costos_metric_label">
+                                <span>Avance Suministro</span>
+                                <i class="fa fa-truck text-success"/>
+                            </div>
+                            <div class="o_gio_costos_metric_value text-success fs-3 fw-bold">
+                                <t t-esc="state.data.kpis_insumos.pct_suministrado"/>%
+                            </div>
+                            <span class="o_gio_costos_metric_hint">
+                                <t t-esc="state.data.kpis_insumos.total_suministrado"/> Uds. entregadas en obra
+                                <t t-if="state.data.kpis_insumos.hay_excedente_suministrado">
+                                    <div class="badge bg-danger-subtle text-danger small mt-1 d-block text-start">
+                                        <i class="fa fa-exclamation-triangle me-1"/>Excedente: +<t t-esc="state.data.kpis_insumos.excedente_suministrado"/> Uds.
+                                    </div>
+                                </t>
+                            </span>
+                        </article>
+
+                        <!-- Tarjeta 3: Productos Solicitados vs Totalmente Surtidos -->
+                        <article class="o_proj_box o_gio_costos_metric flex-fill">
+                            <div class="o_gio_costos_metric_label">
+                                <span>Productos Solicitados</span>
+                                <i class="fa fa-cubes text-info"/>
+                            </div>
+                            <div class="o_gio_costos_metric_value text-info fs-3 fw-bold">
+                                <t t-esc="state.data.kpis_insumos.total_productos_surtidos"/> / <t t-esc="state.data.kpis_insumos.total_productos_solicitados"/>
+                            </div>
+                            <span class="o_gio_costos_metric_hint">
+                                productos totalmente surtidos
+                                <t t-if="state.data.kpis_insumos.hay_excedente_requisitado">
+                                    <div class="badge bg-warning-subtle text-warning-emphasis small mt-1 d-block text-start">
+                                        <i class="fa fa-exclamation-triangle me-1"/>Excedente: +<t t-esc="state.data.kpis_insumos.excedente_requisitado"/> Uds.
+                                    </div>
+                                </t>
+                            </span>
+                        </article>
+
+                        <!-- Tarjeta 4: Destino Logístico -->
+                        <article class="o_proj_box o_gio_costos_metric flex-fill">
+                            <div class="o_gio_costos_metric_label">
+                                <span>Ubicación Destino</span>
+                                <i class="fa fa-building text-secondary"/>
+                            </div>
+                            <div class="o_gio_costos_metric_value text-truncate fs-6 fw-semibold mt-1" t-att-title="state.data.ubicacion_almacen or 'Sin ubicación'">
+                                <t t-esc="state.data.ubicacion_almacen or 'Pendiente de asignar'"/>
+                            </div>
+                            <span class="o_gio_costos_metric_hint text-muted small">
+                                Recepción física de obra
+                            </span>
+                        </article>
+                    </div>
+
+                    <!-- Botón Principal: Nueva Requisición -->
+                    <div class="o_gio_costos_actions align-self-center ms-auto">
+                        <button class="btn btn-primary btn-sm px-3 py-2 shadow-sm"
+                                t-att-disabled="state.busy or state.loading or !state.data?.puede_crear"
+                                t-on-click="crearRequisicion"
+                                title="Generar requisición a partir de la explosión de insumos">
+                            <i class="fa fa-plus me-1"/> Nueva Requisición
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contenido Principal: Filtros y Tabla -->
+            <main class="o_gio_costos_content px-3 pb-3">
+                <div t-if="state.error" class="alert alert-danger" role="alert">
+                    <t t-esc="state.error"/>
+                    <button class="btn btn-sm btn-outline-danger ms-3" t-on-click="() => this.load(0)">Reintentar</button>
+                </div>
+
+                <div t-elif="state.loading and !state.data" class="text-center py-5">
+                    <i class="fa fa-circle-o-notch fa-spin fa-2x text-primary mb-2"/>
+                    <p class="text-muted">Cargando requisiciones del proyecto…</p>
+                </div>
+
+                <section t-else="" class="o_gio_costos_documents">
+                    <!-- Barra de Búsqueda y Filtros -->
+                    <form class="o_gio_costos_filters d-flex flex-wrap align-items-center gap-2 mb-3 o_proj_box p-2" t-on-submit="buscar">
+                        <label class="o_gio_costos_search flex-grow-1">
+                            <span class="visually-hidden">Buscar requisición</span>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="fa fa-search text-muted"/></span>
+                                <input type="search" class="form-control" t-model="state.filtros.buscar" placeholder="Buscar folio, solicitante o autorizador…"/>
+                            </div>
+                        </label>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-muted">Estado:</span>
+                            <select class="form-select form-select-sm" t-model="state.filtros.estado" t-on-change="() => this.load(0)">
+                                <option value="">Todos</option>
+                                <option t-foreach="state.data.estados" t-as="est" t-key="est[0]" t-att-value="est[0]">
+                                    <t t-esc="est[1]"/>
+                                </option>
+                            </select>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-muted">Desde:</span>
+                            <input type="date" class="form-control form-control-sm" t-model="state.filtros.desde"/>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="small text-muted">Hasta:</span>
+                            <input type="date" class="form-control form-control-sm" t-model="state.filtros.hasta"/>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" type="submit" t-att-disabled="state.loading">Filtrar</button>
+                        <button t-if="hayFiltros" class="btn btn-sm btn-link text-decoration-none" type="button" t-on-click="limpiar">Limpiar</button>
+                    </form>
+
+                    <!-- Resumen del Listado -->
+                    <div class="d-flex justify-content-between align-items-center mb-2 text-muted small">
+                        <span><strong><t t-esc="state.data.total"/></strong> requisiciones encontradas</span>
+                        <span t-if="state.loading"><i class="fa fa-spinner fa-spin me-1"/> Actualizando…</span>
+                    </div>
+
+                    <!-- Tabla de Documentos -->
+                    <div t-if="state.data.filas.length" class="table-responsive shadow-sm rounded o_gio_costos_table_container">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Fecha Requerida</th>
+                                    <th>Solicitante</th>
+                                    <th>Autoriza</th>
+                                    <th>Almacén</th>
+                                    <th class="text-center">Ítems</th>
+                                    <th class="text-center">Avance Suministro</th>
+                                    <th class="text-center">Estado</th>
+                                    <th/>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="state.data.filas" t-as="fila" t-key="fila.id" style="cursor: pointer;" t-on-click="() => this.abrirRequisicion(fila.id)">
+                                    <td class="fw-bold text-primary">
+                                        <t t-esc="fila.name"/>
+                                    </td>
+                                    <td><t t-esc="fila.fecha_requerida"/></td>
+                                    <td><t t-esc="fila.solicitante"/></td>
+                                    <td class="text-muted"><t t-esc="fila.autoriza"/></td>
+                                    <td><t t-esc="fila.almacen"/></td>
+                                    <td class="text-center">
+                                        <span class="badge border o_gio_badge_items">
+                                            <t t-esc="fila.total_lineas"/> partidas (<t t-esc="fila.total_items"/> uds)
+                                        </span>
+                                    </td>
+                                    <td class="text-center" style="min-width: 140px;">
+                                        <div class="progress" style="height: 16px;">
+                                            <div class="progress-bar bg-success" role="progressbar"
+                                                 t-att-style="'width: ' + fila.pct_surtido + '%;'"
+                                                 t-att-aria-valuenow="fila.pct_surtido" aria-valuemin="0" aria-valuemax="100">
+                                                <small><t t-esc="fila.pct_surtido"/>%</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span t-att-class="'badge ' + badgeEstadoClass(fila.estado)">
+                                            <t t-esc="fila.estado_label"/>
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-primary" title="Abrir Requisición" aria-label="Abrir Requisición">
+                                            <i class="fa fa-angle-right"/>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Estado Vacío -->
+                    <div t-else="" class="o_proj_box text-center py-5">
+                        <i class="fa fa-shopping-cart fa-3x text-muted mb-3"/>
+                        <h5 class="fw-semibold text-secondary">
+                            <t t-esc="hayFiltros ? 'No se encontraron requisiciones con estos filtros' : 'Aún no se han generado requisiciones para este proyecto'"/>
+                        </h5>
+                        <p class="text-muted small mb-3">
+                            <t t-esc="hayFiltros ? 'Prueba ajustando los criterios de búsqueda o fecha.' : 'Genera requisiciones para solicitar insumos directamente desde el presupuesto de la obra.'"/>
+                        </p>
+                        <button t-if="!hayFiltros and state.data?.puede_crear" class="btn btn-sm btn-primary" t-on-click="crearRequisicion">
+                            <i class="fa fa-plus me-1"/> Crear Primera Requisición
+                        </button>
+                    </div>
+
+                    <!-- Paginador -->
+                    <footer t-if="state.data.total > 0" class="d-flex justify-content-between align-items-center mt-3 text-muted small">
+                        <span>Mostrando <t t-esc="desdeFila"/>–<t t-esc="hastaFila"/> de <t t-esc="state.data.total"/></span>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" t-att-disabled="state.loading or state.pagina == 0" t-on-click="() => this.load(state.pagina - 1)">
+                                <i class="fa fa-angle-left"/> Anterior
+                            </button>
+                            <button class="btn btn-outline-secondary" t-att-disabled="state.loading or hastaFila >= state.data.total" t-on-click="() => this.load(state.pagina + 1)">
+                                Siguiente <i class="fa fa-angle-right"/>
+                            </button>
+                        </div>
+                    </footer>
+                </section>
+            </main>
+        </div>
+    </t>
+</templates>
