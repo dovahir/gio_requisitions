@@ -46,7 +46,7 @@ class ContractorProyecto(models.Model):
     @api.depends('requisition_ids')
     def _compute_requisition_count(self):
         for rec in self:
-            rec.requisition_count = len(rec.requisition_ids)
+            rec.requisition_count = len(rec.sudo().requisition_ids)
 
     def _validar_elegibilidad_requisiciones(self):
         """Verifica los candados obligatorios antes de permitir operaciones de requisición."""
@@ -89,6 +89,8 @@ class ContractorProyecto(models.Model):
     def action_open_requisition_wizard(self, selected_lines=None):
         """Abre el asistente de creación de requisiciones precargado con el proyecto."""
         self.ensure_one()
+        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_user')):
+            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Usuario de Requisiciones."))
         self._validar_elegibilidad_requisiciones()
 
         # Determinar almacén por defecto desde el proyecto o su ubicación
@@ -178,6 +180,8 @@ class ContractorProyecto(models.Model):
         """Abre la vista estándar de requisiciones filtradas por este proyecto (Smart Button)."""
         self.ensure_one()
         self.check_access('read')
+        if not self.env.user.has_group('dh_requisitions.group_requisitions_user'):
+            raise UserError(_("No cuentas con permisos para acceder a las requisiciones del proyecto."))
         action = self.env.ref('dh_requisitions.requisitions_action_all').read()[0]
         action['domain'] = [('proyecto_id', '=', self.id)]
         action['context'] = {
@@ -204,6 +208,20 @@ class ContractorProyecto(models.Model):
             and self.baseline_revision_id.state in ('aprobada', 'sustituida')
             and bool(self.baseline_revision_id.snapshot_capturado)
         )
+        try:
+            Requisition.check_access('read')
+        except Exception:
+            return {
+                'filas': [],
+                'total_filas': 0,
+                'total_paginas': 0,
+                'pagina_actual': 0,
+                'puede_crear': False,
+                'configurado_almacen': configurado_almacen,
+                'congelado_ok': congelado_ok,
+                'kpis': {'total_requisiciones': 0, 'aprobadas': 0, 'en_proceso': 0, 'finalizadas': 0},
+            }
+
         try:
             Requisition.check_access('create')
             puede_crear = self.is_requisition_eligible

@@ -52,6 +52,10 @@ class TestGioRequisitions(common.TransactionCase):
             'company_id': cls.company.id,
         })
 
+        cls.env.user.write({
+            'group_ids': [(4, cls.env.ref('dh_requisitions.group_requisitions_user').id)]
+        })
+
     def _crear_proyecto_base(self, congelado=False, con_almacen=False):
         """Helper para inicializar proyectos con diferentes estados de elegibilidad."""
         proyecto = self.Proyecto.create({
@@ -416,3 +420,25 @@ class TestGioRequisitions(common.TransactionCase):
 
         with self.assertRaises(UserError):
             proy_ok.action_crear_ubicacion_proyecto()
+
+    def test_11_gio_user_without_requisitions_permission(self):
+        """Valida que un usuario de GIO sin permisos de requisiciones pueda navegar el proyecto sin AccessError, pero no crear requisiciones."""
+        user_gio = self.env['res.users'].create({
+            'name': 'Planeador GIO Test',
+            'login': 'planeador_gio_test@example.com',
+            'company_id': self.company.id,
+            'company_ids': [(6, 0, [self.company.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('gio.group_gio_planeador').id,
+            ])],
+        })
+        proy_ok, _ = self._crear_proyecto_base(congelado=True, con_almacen=True)
+
+        # 1. El usuario de GIO puede consultar el proyecto y sus partidas sin AccessError
+        proy_leido = proy_ok.with_user(user_gio)
+        self.assertEqual(proy_leido.requisition_count, 0)
+
+        # 2. Si intenta solicitar requisición, debe recibir UserError explicativo en vez de AccessError abrupto
+        with self.assertRaises(UserError):
+            proy_leido.action_open_requisition_wizard()

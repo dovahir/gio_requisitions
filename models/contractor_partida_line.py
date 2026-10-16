@@ -41,7 +41,8 @@ class ContractorPartidaLine(models.Model):
     )
     def _compute_traceability_quantities(self):
         for rec in self:
-            valid_lines = rec.requisition_line_ids.filtered(
+            rec_sudo = rec.sudo()
+            valid_lines = rec_sudo.requisition_line_ids.filtered(
                 lambda l: l.requisition_id and l.requisition_id.state not in ('cancel', 'rejected')
             )
             req_qty = sum(valid_lines.mapped('product_qty'))
@@ -54,6 +55,8 @@ class ContractorPartidaLine(models.Model):
     def action_solicitar_requisicion_proyecto(self):
         """Dispara el asistente de requisición para el proyecto de las líneas o del contexto."""
         self.check_access('read')
+        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_user')):
+            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Usuario de Requisiciones."))
         proyecto = False
         selected = self.filtered(lambda l: not l.es_grupo and l.product_id)
         if self:

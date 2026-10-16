@@ -10,7 +10,8 @@
                 <field name="is_requisition_eligible" invisible="1"/>
                 <button name="action_view_requisitions" type="object"
                         class="oe_stat_button" icon="fa-shopping-cart"
-                        invisible="requisition_count == 0">
+                        invisible="requisition_count == 0"
+                        groups="dh_requisitions.group_requisitions_user">
                     <field name="requisition_count" widget="statinfo" string="Requisiciones"/>
                 </button>
             </xpath>
