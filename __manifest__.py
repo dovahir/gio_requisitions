@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Conector: GIO y Requisiciones",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.1.1",
     "category": "Supply Chain / Construction",
     "summary": "Vinculación entre proyectos de obra GIO y requisiciones de materiales.",
     "description": """
