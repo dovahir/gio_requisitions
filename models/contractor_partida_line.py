@@ -23,7 +23,7 @@ class ContractorPartidaLine(models.Model):
         compute='_compute_traceability_quantities',
         readonly=True,
         digits='Product Unit of Measure',
-        help='Cantidad física total entregada y recibida en obra vía supply.chain.allocation.',
+        help='Cantidad física total entregada y recibida en obra vía requisition.allocation.',
     )
     qty_in_transit = fields.Float(
         string='En Tránsito',
