@@ -13,6 +13,7 @@ Características principales:
 - Creación de requisiciones a partir de la explosión de insumos del proyecto.
 - Validación de que el proyecto cuente con almacén asignado y presupuesto aprobado.
 - Consulta del avance de suministro y materiales solicitados en el panel del proyecto.
+- Alerta informativa en requisición sobre insumos que exceden la explosión presupuestal APU del proyecto.
     """,
     "author": "Aldahir / GIO Architect",
     "maintainer": "Aldahir",

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
+from markupsafe import Markup, escape
 
 
 class Requisitions(models.Model):
@@ -82,3 +83,37 @@ class Requisitions(models.Model):
         for line in self.line_ids:
             if line.partida_line_id and line.partida_line_id.partida_id.proyecto_id != self.proyecto_id:
                 line.partida_line_id = False
+
+    def action_confirm(self):
+        res = super().action_confirm()
+        for rec in self:
+            excedentes = rec.line_ids.filtered(lambda l: getattr(l, 'is_excedente_apu', False))
+            if excedentes:
+                detalles = []
+                for l in excedentes:
+                    partida_label = l.partida_id.display_name if l.partida_id else ''
+                    detalles.append(
+                        "<li><strong>%s</strong> (Partida: %s): Requisitado <strong>%s %s</strong> vs Explosión APU <strong>%s %s</strong> (Excedente: <strong>+%s %s</strong>)</li>" % (
+                            escape(l.product_id.display_name),
+                            escape(partida_label),
+                            l.product_qty,
+                            escape(l.product_uom_id.name or ''),
+                            l.partida_line_id.cantidad_explosion,
+                            escape(l.product_uom_id.name or ''),
+                            l.qty_excedente_apu,
+                            escape(l.product_uom_id.name or '')
+                        )
+                    )
+                body = Markup(
+                    "<div class='alert alert-warning mb-0'>"
+                    "<strong>%s</strong><br/>"
+                    "%s"
+                    "<ul>%s</ul>"
+                    "</div>"
+                ) % (
+                    _("Aviso Presupuestal de Obra: Excedente APU Solicitado"),
+                    _("La requisición incluye cantidades que exceden la explosión presupuestal del APU del proyecto:"),
+                    Markup("".join(detalles))
+                )
+                rec.message_post(body=body, subtype_xmlid="mail.mt_note")
+        return res

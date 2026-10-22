@@ -43,3 +43,32 @@ class RequisitionsLine(models.Model):
 
         if not self.product_qty:
             self.product_qty = 1.0
+
+    is_excedente_apu = fields.Boolean(
+        string='¿Excedente de APU?',
+        compute='_compute_excedente_apu',
+        store=True,
+        help='Indica si la cantidad solicitada excede la explosión presupuestal de APU del proyecto.'
+    )
+    qty_excedente_apu = fields.Float(
+        string='Cantidad Excedente APU',
+        compute='_compute_excedente_apu',
+        store=True,
+        digits='Product Unit of Measure',
+        help='Cantidad que excede la explosión calculada en el APU.'
+    )
+
+    @api.depends('product_qty', 'partida_line_id', 'partida_line_id.cantidad_explosion')
+    def _compute_excedente_apu(self):
+        for line in self:
+            if line.partida_line_id and line.partida_line_id.cantidad_explosion:
+                explosion = line.partida_line_id.cantidad_explosion
+                if line.product_qty > explosion:
+                    line.is_excedente_apu = True
+                    line.qty_excedente_apu = line.product_qty - explosion
+                else:
+                    line.is_excedente_apu = False
+                    line.qty_excedente_apu = 0.0
+            else:
+                line.is_excedente_apu = False
+                line.qty_excedente_apu = 0.0

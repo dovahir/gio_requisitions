@@ -442,3 +442,32 @@ class TestGioRequisitions(common.TransactionCase):
         # 2. Si intenta solicitar requisición, debe recibir UserError explicativo en vez de AccessError abrupto
         with self.assertRaises(UserError):
             proy_leido.action_open_requisition_wizard()
+
+    def test_12_alerta_informativa_excedente_apu_sin_bloqueo(self):
+        """Valida que una requisición con cantidad superior a la explosión APU marque excedente y notifique sin bloquear (H-10)."""
+        proy_ok, linea_insumo = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        # La explosión tiene 100.0 unidades (10 * 10)
+        self.assertEqual(linea_insumo.cantidad_explosion, 100.0)
+
+        # Crear requisición solicitando 120.0 unidades (20.0 de excedente)
+        req = self.Requisition.create({
+            'employee_id': self.employee.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [(0, 0, {
+                'partida_line_id': linea_insumo.id,
+                'product_id': self.product.id,
+                'product_qty': 120.0,
+                'line_type': 'material',
+            })]
+        })
+
+        line = req.line_ids[0]
+        self.assertTrue(line.is_excedente_apu)
+        self.assertEqual(line.qty_excedente_apu, 20.0)
+
+        # Debe permitir confirmar sin lanzar ValidationError
+        req.action_confirm()
+        self.assertEqual(req.state, 'to_approve')
+

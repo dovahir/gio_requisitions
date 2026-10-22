@@ -19,6 +19,8 @@
                        domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
                        options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="partida_id" optional="show"/>
+                <field name="is_excedente_apu" column_invisible="1"/>
+                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
             </xpath>
 
             <!-- Inyección de columnas en pestaña Equipos -->
@@ -27,6 +29,8 @@
                        domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
                        options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="partida_id" optional="show"/>
+                <field name="is_excedente_apu" column_invisible="1"/>
+                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
             </xpath>
 
             <!-- Inyección de columnas en pestaña Herramientas -->
@@ -35,6 +39,8 @@
                        domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
                        options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="partida_id" optional="show"/>
+                <field name="is_excedente_apu" column_invisible="1"/>
+                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
             </xpath>
 
             <!-- Inyección de columnas en pestaña Servicios -->
@@ -43,6 +49,8 @@
                        domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
                        options="{'no_create': True, 'no_create_edit': True}"/>
                 <field name="partida_id" optional="show"/>
+                <field name="is_excedente_apu" column_invisible="1"/>
+                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
             </xpath>
         </field>
     </record>
