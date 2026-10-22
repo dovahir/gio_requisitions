@@ -48,13 +48,11 @@ class ContractorExplosionRequisicionWizard(models.TransientModel):
     )
     priority = fields.Selection(
         [
-            ('0', 'Sin prioridad'),
-            ('1', 'Baja'),
-            ('2', 'Media'),
-            ('3', 'Urgente'),
+            ('normal', 'Normal'),
+            ('urgent', 'Urgente'),
         ],
         string='Prioridad',
-        default='1',
+        default='normal',
         required=True,
     )
     note = fields.Text(
