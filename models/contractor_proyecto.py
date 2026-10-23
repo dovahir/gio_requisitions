@@ -89,8 +89,8 @@ class ContractorProyecto(models.Model):
     def action_open_requisition_wizard(self, selected_lines=None):
         """Abre el asistente de creación de requisiciones precargado con el proyecto."""
         self.ensure_one()
-        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_user')):
-            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Usuario de Requisiciones."))
+        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_requester')):
+            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Solicitante de Requisiciones."))
         self._validar_elegibilidad_requisiciones()
 
         # Determinar almacén por defecto desde el proyecto o su ubicación
@@ -180,7 +180,7 @@ class ContractorProyecto(models.Model):
         """Abre la vista estándar de requisiciones filtradas por este proyecto (Smart Button)."""
         self.ensure_one()
         self.check_access('read')
-        if not self.env.user.has_group('dh_requisitions.group_requisitions_user'):
+        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_requester')):
             raise UserError(_("No cuentas con permisos para acceder a las requisiciones del proyecto."))
         action = self.env.ref('dh_requisitions.requisitions_action_all').read()[0]
         action['domain'] = [('proyecto_id', '=', self.id)]

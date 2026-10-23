@@ -53,7 +53,7 @@ class TestGioRequisitions(common.TransactionCase):
         })
 
         cls.env.user.write({
-            'group_ids': [(4, cls.env.ref('dh_requisitions.group_requisitions_user').id)]
+            'group_ids': [(4, cls.env.ref('dh_requisitions.group_requisitions_requester').id)]
         })
 
     def _crear_proyecto_base(self, congelado=False, con_almacen=False):
