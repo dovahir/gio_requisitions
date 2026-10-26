@@ -101,11 +101,6 @@ class ContractorProyecto(models.Model):
                 ('view_location_id', 'parent_of', self.location_id.id),
             ], limit=1)
             almacen_id = wh.id if wh else False
-        if not almacen_id:
-            wh_default = self.env['stock.warehouse'].search([
-                ('company_id', '=', self.company_id.id)
-            ], limit=1)
-            almacen_id = wh_default.id if wh_default else False
 
         # Insumos elegibles de la explosión (partidas hijas con insumos)
         if selected_lines:

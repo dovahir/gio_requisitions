@@ -71,11 +71,6 @@ class Requisitions(models.Model):
                 ('view_location_id', 'parent_of', self.proyecto_id.location_id.id),
             ], limit=1)
 
-        if not almacen:
-            almacen = self.env['stock.warehouse'].search([
-                ('company_id', '=', self.proyecto_id.company_id.id)
-            ], limit=1)
-
         if almacen:
             self.warehouse_id = almacen
 
