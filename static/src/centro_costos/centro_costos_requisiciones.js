@@ -111,6 +111,15 @@ export class CentroCostosRequisiciones extends Component {
         await this.load(0);
     }
 
+    async filtrarPorEstado(estado) {
+        if (this.state.filtros.estado === estado) {
+            this.state.filtros.estado = "";
+        } else {
+            this.state.filtros.estado = estado;
+        }
+        await this.load(0);
+    }
+
     async crearRequisicion() {
         if (this.state.busy || !this.projectId) return;
         this.state.busy = true;
