@@ -422,10 +422,56 @@ class TestGioRequisitions(common.TransactionCase):
             proy_ok.action_crear_ubicacion_proyecto()
 
     def test_11_gio_user_without_requisitions_permission(self):
-        """Valida que un usuario de GIO sin permisos de requisiciones pueda navegar el proyecto sin AccessError, pero no crear requisiciones."""
-        user_gio = self.env['res.users'].create({
+        """Valida que un usuario de Consulta/Analista GIO pueda consultar el proyecto y sus requisiciones sin AccessError, pero no crearlas."""
+        user_analista = self.env['res.users'].create({
+            'name': 'Analista GIO Test',
+            'login': 'analista_gio_test@example.com',
+            'company_id': self.company.id,
+            'company_ids': [(6, 0, [self.company.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('gio.group_gio_analista').id,
+            ])],
+        })
+        proy_ok, linea1 = self._crear_proyecto_base(congelado=True, con_almacen=True)
+
+        # Crear una requisición para el proyecto
+        req = self.Requisition.create({
+            'employee_id': self.employee.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [(0, 0, {
+                'partida_line_id': linea1.id,
+                'product_id': self.product.id,
+                'product_qty': 10.0,
+                'line_type': 'material',
+            })]
+        })
+
+        # 1. El usuario Analista GIO puede consultar el proyecto y las requisiciones en el dashboard sin AccessError
+        proy_leido = proy_ok.with_user(user_analista)
+        self.assertEqual(proy_leido.requisition_count, 1)
+
+        datos_dashboard = proy_leido.retrieve_centro_costos_requisiciones()
+        self.assertEqual(len(datos_dashboard['filas']), 1)
+        self.assertEqual(datos_dashboard['filas'][0]['id'], req.id)
+        # No tiene permiso para crear requisiciones
+        self.assertFalse(datos_dashboard['puede_crear'])
+
+        # 2. Si intenta solicitar requisición, debe recibir UserError explicativo
+        with self.assertRaises(UserError):
+            proy_leido.action_open_requisition_wizard()
+
+    def test_13_gio_planeador_can_create_requisition(self):
+        """Valida que un Planeador GIO cuente con permisos para generar requisiciones desde el proyecto."""
+        emp_planeador = self.env['hr.employee'].create({
+            'name': 'Empleado Planeador Test',
+            'company_id': self.company.id,
+        })
+        user_planeador = self.env['res.users'].create({
             'name': 'Planeador GIO Test',
-            'login': 'planeador_gio_test@example.com',
+            'login': 'planeador_creador_test@example.com',
             'company_id': self.company.id,
             'company_ids': [(6, 0, [self.company.id])],
             'group_ids': [(6, 0, [
@@ -433,15 +479,94 @@ class TestGioRequisitions(common.TransactionCase):
                 self.env.ref('gio.group_gio_planeador').id,
             ])],
         })
-        proy_ok, _ = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        emp_planeador.user_id = user_planeador
 
-        # 1. El usuario de GIO puede consultar el proyecto y sus partidas sin AccessError
-        proy_leido = proy_ok.with_user(user_gio)
-        self.assertEqual(proy_leido.requisition_count, 0)
+        proy_ok, linea1 = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        proy_planeador = proy_ok.with_user(user_planeador)
 
-        # 2. Si intenta solicitar requisición, debe recibir UserError explicativo en vez de AccessError abrupto
-        with self.assertRaises(UserError):
-            proy_leido.action_open_requisition_wizard()
+        datos = proy_planeador.retrieve_centro_costos_requisiciones()
+        self.assertTrue(datos['puede_crear'])
+
+        action_wizard = proy_planeador.action_open_requisition_wizard()
+        self.assertEqual(action_wizard['res_model'], 'contractor.explosion.requisicion.wizard')
+
+        wizard = self.env['contractor.explosion.requisicion.wizard'].with_user(user_planeador).browse(action_wizard['res_id'])
+        wizard.employee_id = emp_planeador
+        wizard.user_id = self.env.user # autorizador
+        line_w = wizard.line_ids.filtered(lambda l: l.partida_line_id == linea1)
+        line_w.product_qty = 5.0
+        action_res = wizard.action_crear_requisicion()
+
+        nueva_req = self.env['requisitions'].browse(action_res['res_id'])
+        self.assertEqual(nueva_req.proyecto_id.id, proy_ok.id)
+        self.assertEqual(nueva_req.state, 'draft')
+
+    def test_14_cross_department_requisition_visibility_on_project(self):
+        """Valida que usuarios de distintos departamentos HR puedan visualizar requisiciones del mismo proyecto."""
+        dept_a = self.env['hr.department'].create({'name': 'Departamento Estructura Test'})
+        dept_b = self.env['hr.department'].create({'name': 'Departamento Instalaciones Test'})
+
+        emp_a = self.env['hr.employee'].create({
+            'name': 'Ingeniero A',
+            'department_id': dept_a.id,
+            'company_id': self.company.id,
+        })
+        user_a = self.env['res.users'].create({
+            'name': 'User Ingeniero A',
+            'login': 'user_a_cross_dept@example.com',
+            'company_id': self.company.id,
+            'company_ids': [(6, 0, [self.company.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('gio.group_gio_consulta').id,
+                self.env.ref('dh_requisitions.group_requisitions_requester').id,
+            ])],
+        })
+        emp_a.user_id = user_a
+
+        emp_b = self.env['hr.employee'].create({
+            'name': 'Ingeniero B',
+            'department_id': dept_b.id,
+            'company_id': self.company.id,
+        })
+        user_b = self.env['res.users'].create({
+            'name': 'User Ingeniero B',
+            'login': 'user_b_cross_dept@example.com',
+            'company_id': self.company.id,
+            'company_ids': [(6, 0, [self.company.id])],
+            'group_ids': [(6, 0, [
+                self.env.ref('base.group_user').id,
+                self.env.ref('gio.group_gio_consulta').id,
+                self.env.ref('dh_requisitions.group_requisitions_requester').id,
+            ])],
+        })
+        emp_b.user_id = user_b
+
+        proy_ok, linea1 = self._crear_proyecto_base(congelado=True, con_almacen=True)
+
+        # Usuario A crea requisición para el proyecto
+        req_a = self.Requisition.with_user(user_a).create({
+            'employee_id': emp_a.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [(0, 0, {
+                'partida_line_id': linea1.id,
+                'product_id': self.product.id,
+                'product_qty': 15.0,
+                'line_type': 'material',
+            })]
+        })
+
+        # Usuario B (de otro departamento) consulta las requisiciones del proyecto
+        proy_b = proy_ok.with_user(user_b)
+        datos_b = proy_b.retrieve_centro_costos_requisiciones()
+        self.assertEqual(len(datos_b['filas']), 1)
+        self.assertEqual(datos_b['filas'][0]['id'], req_a.id)
+
+        # Usuario B puede leer la requisición directamente
+        req_leida_por_b = req_a.with_user(user_b)
+        self.assertEqual(req_leida_por_b.name, req_a.name)
 
     def test_12_alerta_informativa_excedente_apu_sin_bloqueo(self):
         """Valida que una requisición con cantidad superior a la explosión APU marque excedente y notifique sin bloquear (H-10)."""

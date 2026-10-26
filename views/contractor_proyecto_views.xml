@@ -11,7 +11,7 @@
                 <button name="action_view_requisitions" type="object"
                         class="oe_stat_button" icon="fa-shopping-cart"
                         invisible="requisition_count == 0"
-                        groups="dh_requisitions.group_requisitions_requester">
+                        groups="gio.group_gio_consulta,dh_requisitions.group_requisitions_requester">
                     <field name="requisition_count" widget="statinfo" string="Requisiciones"/>
                 </button>
             </xpath>

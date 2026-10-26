@@ -89,8 +89,13 @@ class ContractorProyecto(models.Model):
     def action_open_requisition_wizard(self, selected_lines=None):
         """Abre el asistente de creación de requisiciones precargado con el proyecto."""
         self.ensure_one()
-        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_requester')):
-            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Solicitante de Requisiciones."))
+        puede_solicitar = (
+            self.env.is_admin()
+            or self.env.user.has_group('gio.group_gio_planeador')
+            or self.env.user.has_group('dh_requisitions.group_requisitions_requester')
+        )
+        if not puede_solicitar:
+            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Planeador de Obra o Solicitante de Requisiciones."))
         self._validar_elegibilidad_requisiciones()
 
         # Determinar almacén por defecto desde el proyecto o su ubicación
@@ -175,7 +180,12 @@ class ContractorProyecto(models.Model):
         """Abre la vista estándar de requisiciones filtradas por este proyecto (Smart Button)."""
         self.ensure_one()
         self.check_access('read')
-        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_requester')):
+        puede_ver = (
+            self.env.is_admin()
+            or self.env.user.has_group('gio.group_gio_consulta')
+            or self.env.user.has_group('dh_requisitions.group_requisitions_requester')
+        )
+        if not puede_ver:
             raise UserError(_("No cuentas con permisos para acceder a las requisiciones del proyecto."))
         action = self.env.ref('dh_requisitions.requisitions_action_all').read()[0]
         action['domain'] = [('proyecto_id', '=', self.id)]
@@ -217,11 +227,11 @@ class ContractorProyecto(models.Model):
                 'kpis': {'total_requisiciones': 0, 'aprobadas': 0, 'en_proceso': 0, 'finalizadas': 0},
             }
 
-        try:
-            Requisition.check_access('create')
-            puede_crear = self.is_requisition_eligible
-        except Exception:
-            puede_crear = False
+        puede_crear = self.is_requisition_eligible and (
+            self.env.is_admin()
+            or self.env.user.has_group('gio.group_gio_planeador')
+            or self.env.user.has_group('dh_requisitions.group_requisitions_requester')
+        )
 
         # 2. Dominio base
         domain = [('proyecto_id', '=', self.id)]

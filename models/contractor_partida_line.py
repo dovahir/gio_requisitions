@@ -55,8 +55,13 @@ class ContractorPartidaLine(models.Model):
     def action_solicitar_requisicion_proyecto(self):
         """Dispara el asistente de requisición para el proyecto de las líneas o del contexto."""
         self.check_access('read')
-        if not (self.env.is_admin() or self.env.user.has_group('dh_requisitions.group_requisitions_requester')):
-            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Solicitante de Requisiciones."))
+        puede_solicitar = (
+            self.env.is_admin()
+            or self.env.user.has_group('gio.group_gio_planeador')
+            or self.env.user.has_group('dh_requisitions.group_requisitions_requester')
+        )
+        if not puede_solicitar:
+            raise UserError(_("Para solicitar requisiciones desde el proyecto, debes contar con el perfil de Planeador de Obra o Solicitante de Requisiciones."))
         proyecto = False
         selected = self.filtered(lambda l: not l.es_grupo and l.product_id)
         if self:

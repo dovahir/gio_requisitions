@@ -27,6 +27,7 @@ Características principales:
         "gio",
     ],
     "data": [
+        "security/gio_requisitions_security.xml",
         "security/ir.model.access.csv",
         "wizard/contractor_explosion_requisicion_wizard_views.xml",
         "views/contractor_partida_line_views.xml",

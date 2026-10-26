@@ -119,7 +119,7 @@
                         <button class="btn btn-primary btn-sm px-3 py-2 shadow-sm"
                                 t-att-disabled="state.busy or state.loading or !state.data?.puede_crear"
                                 t-on-click="crearRequisicion"
-                                title="Generar requisición a partir de la explosión de insumos">
+                                t-att-title="state.data?.puede_crear ? 'Generar requisición a partir de la explosión de insumos' : 'La generación de requisiciones está reservada a Planeadores de Obra y Solicitantes autorizados'">
                             <i class="fa fa-plus me-1"/> Nueva Requisición
                         </button>
                     </div>

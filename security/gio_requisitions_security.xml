@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ============================================================= -->
+        <!-- 1. HERENCIA DE GRUPOS: PLANEADOR GIO Y REQUISICIONES          -->
+        <!-- ============================================================= -->
+        <!-- El Planeador GIO (y por ende el Administrador GIO) hereda el   -->
+        <!-- perfil de Solicitante de Requisiciones para emitir pedidos.    -->
+        <record id="gio.group_gio_planeador" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('dh_requisitions.group_requisitions_requester'))]"/>
+        </record>
+
+        <!-- ============================================================= -->
+        <!-- 2. REGLAS DE REGISTRO: CONSULTA INTEGRAL POR PROYECTO GIO      -->
+        <!-- ============================================================= -->
+
+        <!-- 2.1 Requisiciones de Cabecera: Lectura para usuarios GIO y Solicitantes -->
+        <record id="requisitions_gio_project_read_rule" model="ir.rule">
+            <field name="name">Requisiciones: Consulta por Proyecto GIO</field>
+            <field name="model_id" ref="dh_requisitions.model_requisitions"/>
+            <field name="groups" eval="[(4, ref('gio.group_gio_consulta')), (4, ref('dh_requisitions.group_requisitions_requester'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+            <field name="domain_force">['&amp;', ('proyecto_id', '!=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+
+        <!-- 2.2 Líneas de Requisición: Lectura para usuarios GIO y Solicitantes -->
+        <record id="requisitions_line_gio_project_read_rule" model="ir.rule">
+            <field name="name">Línea Requisición: Consulta por Proyecto GIO</field>
+            <field name="model_id" ref="dh_requisitions.model_requisitions_line"/>
+            <field name="groups" eval="[(4, ref('gio.group_gio_consulta')), (4, ref('dh_requisitions.group_requisitions_requester'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+            <field name="domain_force">['&amp;', ('requisition_id.proyecto_id', '!=', False), ('company_id', 'in', company_ids)]</field>
+        </record>
+    </data>
+</odoo>
