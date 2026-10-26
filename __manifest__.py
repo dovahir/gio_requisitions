@@ -22,7 +22,6 @@ Características principales:
     "depends": [
         "base",
         "stock",
-        "supply_chain_aio",
         "dh_requisitions",
         "gio",
     ],
