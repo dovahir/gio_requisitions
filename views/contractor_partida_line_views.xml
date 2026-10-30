@@ -8,6 +8,8 @@
         <field name="arch" type="xml">
 
             <xpath expr="//field[@name='cantidad_explosion']" position="after">
+                <field name="qty_requisited" string="Requisitado" optional="hide"/>
+                <field name="qty_supplied" string="Suministrado" optional="hide"/>
                 <field name="qty_in_transit" string="En Tránsito" optional="hide"/>
             </xpath>
         </field>

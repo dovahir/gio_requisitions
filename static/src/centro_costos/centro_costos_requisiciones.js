@@ -173,16 +173,16 @@ export class CentroCostosRequisiciones extends Component {
 
     badgeEstadoClass(estado) {
         const clases = {
-            draft: "badge-info",
-            to_approve: "badge-warning",
-            approved: "badge-primary",
-            in_progress: "badge-primary",
-            partially_done: "badge-warning",
-            done: "badge-success",
-            cancel: "badge-secondary",
-            rejected: "badge-danger",
+            draft: "text-bg-info",
+            to_approve: "text-bg-warning",
+            approved: "text-bg-primary",
+            in_progress: "text-bg-primary",
+            partially_done: "text-bg-warning",
+            done: "text-bg-success",
+            cancel: "text-bg-secondary",
+            rejected: "text-bg-danger",
         };
-        return clases[estado] || "badge-secondary";
+        return clases[estado] || "text-bg-secondary";
     }
 }
 

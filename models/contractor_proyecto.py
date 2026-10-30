@@ -45,8 +45,14 @@ class ContractorProyecto(models.Model):
 
     @api.depends('requisition_ids')
     def _compute_requisition_count(self):
+        grouped = self.env['requisitions'].sudo()._read_group(
+            domain=[('proyecto_id', 'in', self.ids)],
+            groupby=['proyecto_id'],
+            aggregates=['__count'],
+        )
+        data_map = {proyecto.id: count for proyecto, count in grouped}
         for rec in self:
-            rec.requisition_count = len(rec.sudo().requisition_ids)
+            rec.requisition_count = data_map.get(rec.id, 0)
 
     def _validar_elegibilidad_requisiciones(self):
         """Verifica los candados obligatorios antes de permitir operaciones de requisición."""
@@ -75,6 +81,19 @@ class ContractorProyecto(models.Model):
                 'El proyecto "%s" se encuentra cerrado. No se permiten '
                 'requisiciones en proyectos cerrados.'
             ) % self.display_name)
+
+        # Validar que exista un almacén operativo directo o resoluble jerárquicamente
+        almacen = self.warehouse_id
+        if not almacen and self.location_id:
+            almacen = self.env['stock.warehouse'].search([
+                ('company_id', '=', self.company_id.id),
+                ('view_location_id', 'parent_of', self.location_id.id),
+            ], limit=1)
+        if not almacen:
+            raise UserError(_(
+                'El proyecto "%s" no tiene un almacén asignado ni se pudo resolver uno desde su ubicación (%s). '
+                'Por favor, asigna un almacén en la configuración del proyecto antes de generar requisiciones.'
+            ) % (self.display_name, self.location_id.display_name))
 
     def action_crear_ubicacion_proyecto(self):
         """Impide duplicar la ubicación de almacén si el proyecto ya tiene una asignada."""
@@ -107,16 +126,17 @@ class ContractorProyecto(models.Model):
             ], limit=1)
             almacen_id = wh.id if wh else False
 
-        # Insumos elegibles de la explosión (partidas hijas con insumos)
+        # Insumos elegibles de la explosión (partidas hijas con insumos, aislando mano de obra)
         if selected_lines:
             lineas_explosion = selected_lines.filtered(
-                lambda l: l.partida_id.proyecto_id.id == self.id and not l.es_grupo and l.product_id
+                lambda l: l.partida_id.proyecto_id.id == self.id and not l.es_grupo and l.product_id and l.tipo_apu != 'mano_obra'
             )
         else:
             lineas_explosion = self.env['contractor.partida.line'].search([
                 ('partida_id.proyecto_id', '=', self.id),
                 ('es_grupo', '=', False),
                 ('product_id', '!=', False),
+                ('tipo_apu', '!=', 'mano_obra'),
             ])
 
         lineas_wizard = []

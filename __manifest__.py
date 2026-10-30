@@ -14,6 +14,7 @@ Características principales:
 - Validación de que el proyecto cuente con almacén asignado y presupuesto aprobado.
 - Consulta del avance de suministro y materiales solicitados en el panel del proyecto.
 - Alerta informativa en requisición sobre insumos que exceden la explosión presupuestal APU del proyecto.
+- Vista unificada de insumos de obra con aislamiento de mano de obra y control de excedentes.
     """,
     "author": "Aldahir / GIO Architect",
     "maintainer": "Aldahir",

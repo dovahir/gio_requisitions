@@ -180,10 +180,10 @@
                 </div>
 
                 <!-- Barra de Acción y Ubicación -->
-                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-2 bg-white rounded-3 shadow-sm border mb-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 p-2 bg-view border border-secondary-subtle rounded-3 shadow-sm mb-3">
                     <div class="d-flex align-items-center text-muted small">
                         <i class="fa fa-map-marker text-danger me-2 fa-lg"/>
-                        <span>Ubicación de Obra: <strong class="text-dark"><t t-esc="state.data.ubicacion_almacen or 'Pendiente de asignar'"/></strong></span>
+                        <span>Ubicación de Obra: <strong class="text-reset fw-bold"><t t-esc="state.data.ubicacion_almacen or 'Pendiente de asignar'"/></strong></span>
                         <span class="mx-2">•</span>
                         <span>Avance Global: <strong class="text-success"><t t-esc="state.data.kpis_insumos.pct_suministrado"/>%</strong></span>
                     </div>

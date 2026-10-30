@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
-from odoo.tests import common, tagged
+from odoo.tests import Form, common, tagged
 
 from odoo.addons.gio.models.contractor_proyecto_revision import MARCADOR_REVISION_INTERNA
 
@@ -595,4 +595,181 @@ class TestGioRequisitions(common.TransactionCase):
         # Debe permitir confirmar sin lanzar ValidationError
         req.action_confirm()
         self.assertEqual(req.state, 'to_approve')
+
+    def test_15_cancelacion_parcial_ledger_sincroniza_transito(self):
+        """Valida que cancelaciones parciales o totales descuenten qty_cancelled de qty_in_transit y qty_requisited."""
+        proy_ok, linea_insumo = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        req = self.Requisition.create({
+            'employee_id': self.employee.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [(0, 0, {
+                'partida_line_id': linea_insumo.id,
+                'product_id': self.product.id,
+                'product_qty': 50.0,
+                'line_type': 'material',
+            })]
+        })
+        linea_insumo.invalidate_recordset(['qty_requisited', 'qty_in_transit', 'qty_supplied'])
+        self.assertEqual(linea_insumo.qty_requisited, 50.0)
+        self.assertEqual(linea_insumo.qty_in_transit, 50.0)
+
+        # Simular cancelación definitiva de 20 unidades en la línea (qty_cancelled = 20)
+        line = req.line_ids[0]
+        line.qty_cancelled = 20.0
+        linea_insumo.invalidate_recordset(['qty_requisited', 'qty_in_transit', 'qty_supplied'])
+        # Demanda neta activa debe ser 50 - 20 = 30.0
+        self.assertEqual(linea_insumo.qty_requisited, 30.0)
+        self.assertEqual(linea_insumo.qty_in_transit, 30.0)
+
+    def test_16_excedente_apu_acumulado_multiples_requisiciones(self):
+        """Valida que el cálculo de excedente considere el acumulado previo del proyecto."""
+        proy_ok, linea_insumo = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        # Presupuesto: 100.0 unidades
+        self.assertEqual(linea_insumo.cantidad_explosion, 100.0)
+
+        # Requisición 1: 60 unidades (dentro de presupuesto)
+        req1 = self.Requisition.create({
+            'employee_id': self.employee.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [(0, 0, {
+                'partida_line_id': linea_insumo.id,
+                'product_id': self.product.id,
+                'product_qty': 60.0,
+                'line_type': 'material',
+            })]
+        })
+        self.assertFalse(req1.line_ids[0].is_excedente_apu)
+        self.assertEqual(req1.line_ids[0].qty_excedente_apu, 0.0)
+
+        # Requisición 2: 50 unidades (acumulado 110 -> 10 unidades de excedente)
+        req2 = self.Requisition.create({
+            'employee_id': self.employee.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [(0, 0, {
+                'partida_line_id': linea_insumo.id,
+                'product_id': self.product.id,
+                'product_qty': 50.0,
+                'line_type': 'material',
+            })]
+        })
+        self.assertTrue(req2.line_ids[0].is_excedente_apu)
+        self.assertEqual(req2.line_ids[0].qty_excedente_apu, 10.0)
+
+    def test_17_mano_obra_aislado_de_requisiciones(self):
+        """Valida que insumos APU de Mano de Obra no se incluyan en el wizard ni se permitan en requisiciones."""
+        proy_ok, linea_insumo = self._crear_proyecto_base(congelado=False, con_almacen=True)
+        partida = linea_insumo.partida_id
+        prod_mo = self.Product.create({
+            'name': 'Mano de Obra Cuadrilla Albañil Test',
+            'type': 'service',
+            'uom_id': self.env.ref('uom.product_uom_unit').id,
+        })
+        linea_mo = self.PartidaLine.create({
+            'partida_id': partida.id,
+            'product_id': prod_mo.id,
+            'cantidad': 10.0,
+            'tipo_apu': 'mano_obra',
+            'es_grupo': False,
+            'precio': 500.0,
+        })
+
+        # Congelar revisión contractual
+        revision = self.env['contractor.proyecto.revision'].with_context(
+            _revision_crear=MARCADOR_REVISION_INTERNA,
+        ).create({
+            'proyecto_id': proy_ok.id,
+            'nombre': 'Revisión Baseline Inicial Test 17',
+            'motivo': 'Aprobación inicial de baseline contractual para pruebas',
+        })
+        revision.with_context(_revision_lifecycle=MARCADOR_REVISION_INTERNA).write({
+            'state': 'aprobada',
+            'snapshot_capturado': True,
+            'fecha_aprobacion': fields.Datetime.now(),
+        })
+        proy_ok.write({
+            'baseline_revision_id': revision.id,
+            'revision_actual_id': revision.id,
+            'state': 'borrador',
+        })
+
+        # 1. El wizard de requisición no debe precargar la línea de mano de obra
+        action = proy_ok.action_open_requisition_wizard()
+        wizard = self.env['contractor.explosion.requisicion.wizard'].browse(action['res_id'])
+        self.assertNotIn(linea_mo, wizard.line_ids.mapped('partida_line_id'))
+
+        # 2. El constrains en requisitions.line debe impedir vincular mano de obra
+        with self.assertRaises(ValidationError):
+            self.Requisition.create({
+                'employee_id': self.employee.id,
+                'proyecto_id': proy_ok.id,
+                'warehouse_id': proy_ok.warehouse_id.id,
+                'user_id': self.env.user.id,
+                'line_ids': [(0, 0, {
+                    'partida_line_id': linea_mo.id,
+                    'product_id': prod_mo.id,
+                    'product_qty': 5.0,
+                    'line_type': 'service',
+                })]
+            })
+
+    def test_18_wizard_form_preserva_partida_line_id(self):
+        """Valida que en la vista Form del wizard editable se preserve partida_line_id (OWL columns)."""
+        proy_ok, linea_insumo = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        action = proy_ok.action_open_requisition_wizard()
+        wizard_form = Form(self.env['contractor.explosion.requisicion.wizard'].browse(action['res_id']))
+        with wizard_form.line_ids.edit(0) as line:
+            self.assertEqual(line.partida_line_id, linea_insumo)
+            line.product_qty = 20.0
+        saved_wizard = wizard_form.save()
+        self.assertEqual(saved_wizard.line_ids[0].partida_line_id, linea_insumo)
+        self.assertEqual(saved_wizard.line_ids[0].product_qty, 20.0)
+
+    def test_19_requisicion_obra_coexistencia_tipos_en_notebook_unificado(self):
+        """Valida que en requisiciones con proyecto coexistan distintos tipos de línea (material, equipo, servicio)."""
+        proy_ok, linea_insumo = self._crear_proyecto_base(congelado=True, con_almacen=True)
+        prod_equipo = self.Product.create({
+            'name': 'Revolvedora 1 Saco Test',
+            'type': 'consu',
+            'uom_id': self.env.ref('uom.product_uom_unit').id,
+        })
+        prod_servicio = self.Product.create({
+            'name': 'Servicio Topografía Test',
+            'type': 'service',
+            'uom_id': self.env.ref('uom.product_uom_unit').id,
+        })
+
+        req = self.Requisition.create({
+            'employee_id': self.employee.id,
+            'proyecto_id': proy_ok.id,
+            'warehouse_id': proy_ok.warehouse_id.id,
+            'user_id': self.env.user.id,
+            'line_ids': [
+                (0, 0, {
+                    'product_id': self.product.id,
+                    'product_qty': 10.0,
+                    'line_type': 'material',
+                    'partida_line_id': linea_insumo.id,
+                }),
+                (0, 0, {
+                    'product_id': prod_equipo.id,
+                    'product_qty': 1.0,
+                    'line_type': 'equipment',
+                }),
+                (0, 0, {
+                    'product_id': prod_servicio.id,
+                    'product_qty': 2.0,
+                    'line_type': 'service',
+                }),
+            ]
+        })
+        self.assertEqual(len(req.line_ids), 3)
+        # Verificar numeración secuencial unificada en proyectos
+        line_numbers = req.line_ids.mapped('sequence_number')
+        self.assertEqual(line_numbers, [1, 2, 3])
 

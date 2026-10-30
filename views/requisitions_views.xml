@@ -13,44 +13,60 @@
                 <field name="proyecto_location_id" invisible="not proyecto_id"/>
             </xpath>
 
-            <!-- Inyección de columnas en pestaña Materiales -->
-            <xpath expr="//page[@name='materials_page']//field[@name='material_line_ids']//list//field[@name='product_id']" position="before">
-                <field name="partida_line_id" optional="hide"
-                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
-                <field name="partida_id" optional="show"/>
-                <field name="is_excedente_apu" column_invisible="1"/>
-                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
+            <!-- Ocultar las 4 pestañas segmentadas cuando la requisición es de Obra / Proyecto GIO -->
+            <xpath expr="//page[@name='materials_page']" position="attributes">
+                <attribute name="invisible">proyecto_id or (state != 'draft' and not material_line_ids)</attribute>
+            </xpath>
+            <xpath expr="//page[@name='tools_page']" position="attributes">
+                <attribute name="invisible">proyecto_id or (state != 'draft' and not tool_line_ids)</attribute>
+            </xpath>
+            <xpath expr="//page[@name='equipments_page']" position="attributes">
+                <attribute name="invisible">proyecto_id or (state != 'draft' and not equipment_line_ids)</attribute>
+            </xpath>
+            <xpath expr="//page[@name='services_page']" position="attributes">
+                <attribute name="invisible">proyecto_id or (state != 'draft' and not service_line_ids)</attribute>
             </xpath>
 
-            <!-- Inyección de columnas en pestaña Equipos -->
-            <xpath expr="//page[@name='equipments_page']//field[@name='equipment_line_ids']//list//field[@name='product_id']" position="before">
-                <field name="partida_line_id" optional="hide"
-                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
-                <field name="partida_id" optional="show"/>
-                <field name="is_excedente_apu" column_invisible="1"/>
-                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
-            </xpath>
-
-            <!-- Inyección de columnas en pestaña Herramientas -->
-            <xpath expr="//page[@name='tools_page']//field[@name='tool_line_ids']//list//field[@name='product_id']" position="before">
-                <field name="partida_line_id" optional="hide"
-                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
-                <field name="partida_id" optional="show"/>
-                <field name="is_excedente_apu" column_invisible="1"/>
-                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
-            </xpath>
-
-            <!-- Inyección de columnas en pestaña Servicios -->
-            <xpath expr="//page[@name='services_page']//field[@name='service_line_ids']//list//field[@name='product_id']" position="before">
-                <field name="partida_line_id" optional="hide"
-                       domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False)]"
-                       options="{'no_create': True, 'no_create_edit': True}"/>
-                <field name="partida_id" optional="show"/>
-                <field name="is_excedente_apu" column_invisible="1"/>
-                <field name="qty_excedente_apu" string="Excedente APU" optional="show" invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
+            <!-- Pestaña Unificada para Requisiciones de Obra GIO (Cualquier insumo APU con columna de Tipo) -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Insumos de Obra" name="project_lines_page" invisible="not proyecto_id">
+                    <field name="line_ids" readonly="not can_edit_lines"
+                           context="{'default_priority': priority}">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="sequence_number" readonly="1"/>
+                            <field name="line_type" string="Tipo de Requisición" required="1"/>
+                            <field name="partida_line_id" optional="show"
+                                   domain="[('partida_id.proyecto_id', '=', parent.proyecto_id), ('es_grupo', '=', False), ('tipo_apu', '!=', 'mano_obra')]"
+                                   options="{'no_create': True, 'no_create_edit': True}"/>
+                            <field name="partida_id" optional="show"/>
+                            <field name="product_id"
+                                   options="{'no_create': True, 'no_create_edit': True}"
+                                   domain="[('categ_id.allow_requisition', '!=', False)]"/>
+                            <field name="product_qty"/>
+                            <field name="qty_pending" readonly="1" optional="show"/>
+                            <field name="qty_done" readonly="1" optional="show"/>
+                            <field name="qty_cancelled" readonly="1" optional="hide"/>
+                            <field name="product_uom_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="priority" optional="hide"/>
+                            <field name="is_excedente_apu" column_invisible="1"/>
+                            <field name="qty_excedente_apu" string="Excedente APU" optional="show"
+                                   invisible="not is_excedente_apu" decoration-warning="is_excedente_apu"/>
+                            <field name="resguardo_state" widget="badge" optional="hide"
+                                   invisible="line_type not in ('tool', 'equipment')"
+                                   decoration-info="resguardo_state == 'in_resguardo'"
+                                   decoration-success="resguardo_state == 'returned'"
+                                   decoration-muted="resguardo_state == 'none'"/>
+                            <field name="line_state" widget="badge" optional="show"
+                                   decoration-info="line_state in ('draft', 'pending')"
+                                   decoration-warning="line_state in ('partial_stock', 'partial_purchase', 'partial_mixed', 'partially_done')"
+                                   decoration-primary="line_state in ('in_stock', 'in_purchase', 'in_mixed')"
+                                   decoration-success="line_state == 'done'"
+                                   decoration-muted="line_state == 'cancel'"/>
+                            <field name="note" optional="show"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
         </field>
     </record>
